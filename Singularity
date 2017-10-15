@@ -20,8 +20,10 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 	#Add Anaconda path
 	PATH="/usr/local/anaconda3-4.2.0/bin:$PATH"
+	CPATH="/usr/local/anaconda3-4.2.0/include/python3.5m:$CPATH"
+	PYTHONPATH="/usr/local/lib/python3.5/site-packages:$PYTHONPATH"
 
-	export PATH LD_LIBRARY_PATH CPATH CUDA_HOME
+	export PATH LD_LIBRARY_PATH CPATH CUDA_HOME PYTHONPATH
 
 
 %setup
@@ -44,17 +46,39 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 	#Updating and getting required packages
 	apt-get update
-	apt-get install -y wget git vim
+	apt-get install -y wget git vim cmake
 
-	#Creates a build directory
-	mkdir build
-	cd build
 
 	#Download and install Anaconda
 	CONDA_INSTALL_PATH="/usr/local/anaconda3-4.2.0"
 	wget https://repo.continuum.io/archive/Anaconda3-4.2.0-Linux-x86_64.sh
 	chmod +x Anaconda3-4.2.0-Linux-x86_64.sh
 	./Anaconda3-4.2.0-Linux-x86_64.sh -b -p $CONDA_INSTALL_PATH
+
+	#Install updated libgcc so that libstdc++ version matches with Ubuntu's
+	conda install -y libgcc
+
+	#Getting some install errors if we don't make this directory
+	mkdir -p /usr/local/anaconda3-4.2.0/var/lib/dbus
+
+	#Gets and builds opencv
+	apt-get install -y build-essential cmake pkg-config
+	apt-get install -y libjpeg-dev libpng-dev libtiff-dev ffmpeg
+	apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
+	apt-get install -y libxvidcore-dev libx264-dev
+	apt-get install -y libatlas-base-dev gfortran
+	wget https://github.com/opencv/opencv/archive/3.3.0.tar.gz
+	tar -xf 3.3.0.tar.gz
+	cd opencv-3.3.0
+	mkdir build
+	cd build
+	cmake -D CMAKE_BUILD_TYPE=RELEASE \
+	-D CMAKE_INSTALL_PREFIX=/usr/local \
+	-D PYTHON3_INCLUDE_DIR="/usr/local/anaconda3-4.2.0/include" \
+	-D PYTHON3_LIBRARY="/usr/local/anaconda3-4.2.0/include/libpython3.5m.so" \
+	..
+	make -j8
+	make install
 
 	#Install Theano
 	conda install -y scipy nose pydot-ng theano pygpu
@@ -68,6 +92,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 	#Install Pytorch
 	conda install -y pytorch torchvision cuda80 -c soumith
+
 
 
 %runscript
