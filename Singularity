@@ -62,7 +62,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	mkdir -p /usr/local/anaconda3-4.2.0/var/lib/dbus
 
 	#Gets and builds opencv
-	apt-get install -y build-essential cmake pkg-config
+	apt-get install -y build-essential cmake pkg-config libgtk2.0-dev
 	apt-get install -y libjpeg-dev libpng-dev libtiff-dev ffmpeg
 	apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
 	apt-get install -y libxvidcore-dev libx264-dev
