@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMG_SIZE=18000
+IMG_SIZE=12000
 IMG_NAME="dl-python-gpu"
 
 rm -f $IMG_NAME.img

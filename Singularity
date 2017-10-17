@@ -30,6 +30,8 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	#Runs on host
 	#The path to the image is $SINGULARITY_ROOTFS
 
+	mkdir $SINGULARITY_ROOTFS/build
+	mount --no-mtab --bind . "$SINGULARITY_ROOTFS/build"
 
 
 %post
@@ -46,8 +48,10 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 	#Updating and getting required packages
 	apt-get update
-	apt-get install -y wget git vim cmake
+	apt-get install -y wget git vim cmake cmake-curses-gui
 
+	#Builds in the build directory
+	cd /build
 
 	#Download and install Anaconda
 	CONDA_INSTALL_PATH="/usr/local/anaconda3-4.2.0"
@@ -62,8 +66,8 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	mkdir -p /usr/local/anaconda3-4.2.0/var/lib/dbus
 
 	#Gets and builds opencv
-	apt-get install -y build-essential cmake pkg-config libgtk2.0-dev
-	apt-get install -y libjpeg-dev libpng-dev libtiff-dev ffmpeg
+	apt-get install -y build-essential cmake pkg-config libgtk-3-dev
+	apt-get install -y libjpeg8-dev libtiff5-dev libjasper-dev libpng12-dev ffmpeg
 	apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
 	apt-get install -y libxvidcore-dev libx264-dev
 	apt-get install -y libatlas-base-dev gfortran
@@ -72,10 +76,17 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	cd opencv-3.3.0
 	mkdir build
 	cd build
-	cmake -D CMAKE_BUILD_TYPE=RELEASE \
-	-D CMAKE_INSTALL_PREFIX=/usr/local \
-	-D PYTHON3_INCLUDE_DIR="/usr/local/anaconda3-4.2.0/include" \
-	-D PYTHON3_LIBRARY="/usr/local/anaconda3-4.2.0/include/libpython3.5m.so" \
+	cmake -DCMAKE_BUILD_TYPE=RELEASE \
+	-DCMAKE_INSTALL_PREFIX=/usr/local \
+	-DBUILD_opencv_python3=yes \
+	-DPYTHON3_INCLUDE_DIR="/usr/local/anaconda3-4.2.0/include" \
+	-DPYTHON3_LIBRARY="/usr/local/anaconda3-4.2.0/include/libpython3.5m.so" \
+	-DPYTHON3_PACKAGES_PATH="/usr/local/lib/python3.5/site-packages" \
+	-DPYTHON_EXECUTABLE=/usr/local/anaconda3-4.2.0/bin/python3 \
+	-DPYTHON_INCLUDE=/usr/local/anaconda3-4.2.0/include \
+	-DPYTHON_LIBRARY="/usr/local/anaconda3-4.2.0/include/libpython3.5m.so" \
+	-DPYTHON_PACKAGES_PATH="/usr/local/lib/python3.5/site-packages" \
+	-DPYTHON_NUMPY_INCLUDE_DIR="/usr/local/anaconda3-4.2.0/lib/python3.5/site-packages/numpy/core/include" \
 	..
 	make -j8
 	make install
