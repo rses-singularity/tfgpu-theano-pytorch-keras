@@ -18,10 +18,9 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 	CUDA_HOME="/usr/local/cuda"
 
-	#Add Anaconda path
-	PATH="/usr/local/anaconda3-4.2.0/bin:$PATH"
-	CPATH="/usr/local/anaconda3-4.2.0/include/python3.5m:$CPATH"
-	PYTHONPATH="/usr/local/lib/python3.5/site-packages:$PYTHONPATH"
+	#Python 3.5 paths
+	CPATH="/usr/include/python3.5m:$CPATH"
+	PYTHONPATH="/usr/local/lib/python3.5/dist-packages:$PYTHONPATH"
 
 	export PATH LD_LIBRARY_PATH CPATH CUDA_HOME PYTHONPATH
 
@@ -48,22 +47,8 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 	#Updating and getting required packages
 	apt-get update
-	apt-get install -y wget git vim cmake cmake-curses-gui
+	apt-get install -y wget git vim cmake cmake-curses-gui python3.5-dev
 
-	#Builds in the build directory
-	cd /build
-
-	#Download and install Anaconda
-	CONDA_INSTALL_PATH="/usr/local/anaconda3-4.2.0"
-	wget https://repo.continuum.io/archive/Anaconda3-4.2.0-Linux-x86_64.sh
-	chmod +x Anaconda3-4.2.0-Linux-x86_64.sh
-	./Anaconda3-4.2.0-Linux-x86_64.sh -b -p $CONDA_INSTALL_PATH
-
-	#Install updated libgcc so that libstdc++ version matches with Ubuntu's
-	conda install -y libgcc
-
-	#Getting some install errors if we don't make this directory
-	mkdir -p /usr/local/anaconda3-4.2.0/var/lib/dbus
 
 	#Gets and builds opencv
 	apt-get install -y build-essential cmake pkg-config libgtk-3-dev
@@ -71,28 +56,51 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
 	apt-get install -y libxvidcore-dev libx264-dev
 	apt-get install -y libatlas-base-dev gfortran
+
+	#Make python 3.5m the default one
+	cd /usr/bin
+	rm /usr/bin/python
+	ln -s python3.5m python
+
+	#Install pip for python 3
+	cd /build
+	wget https://bootstrap.pypa.io/get-pip.py
+	python get-pip.py
+
+	#Installed required global packages
+	pip install numpy
+
+	#Builds in the build directory
+	cd /build
+
 	wget https://github.com/opencv/opencv/archive/3.3.0.tar.gz
 	tar -xf 3.3.0.tar.gz
 	cd opencv-3.3.0
 	mkdir build
 	cd build
-	cmake -DCMAKE_BUILD_TYPE=RELEASE \
-	-DCMAKE_INSTALL_PREFIX=/usr/local \
-	-DBUILD_opencv_python3=yes \
-	-DPYTHON3_INCLUDE_DIR="/usr/local/anaconda3-4.2.0/include" \
-	-DPYTHON3_LIBRARY="/usr/local/anaconda3-4.2.0/include/libpython3.5m.so" \
-	-DPYTHON3_PACKAGES_PATH="/usr/local/lib/python3.5/site-packages" \
-	-DPYTHON_EXECUTABLE=/usr/local/anaconda3-4.2.0/bin/python3 \
-	-DPYTHON_INCLUDE=/usr/local/anaconda3-4.2.0/include \
-	-DPYTHON_LIBRARY="/usr/local/anaconda3-4.2.0/include/libpython3.5m.so" \
-	-DPYTHON_PACKAGES_PATH="/usr/local/lib/python3.5/site-packages" \
-	-DPYTHON_NUMPY_INCLUDE_DIR="/usr/local/anaconda3-4.2.0/lib/python3.5/site-packages/numpy/core/include" \
+	cmake -D CMAKE_BUILD_TYPE=RELEASE \
+	-D CMAKE_INSTALL_PREFIX=/usr/local \
+	-D BUILD_opencv_python3=yes \
+	-D PYTHON_DEFAULT_EXECUTABLE="/usr/bin/python3.5m" \
+	-D CUDA_ARCH_BIN="3.0 3.5 3.7 5.0 5.2 6.0 6.1" \
 	..
 	make -j8
 	make install
+	ldconfig
 
 	#Install Theano
-	conda install -y scipy nose pydot-ng theano pygpu
+	#pip install scipy nose pydot-ng pygpu pycuda Theano
+	#Install libgpuarray needed by theano
+	#cd /build
+	#git clone https://github.com/Theano/libgpuarray.git
+	#cd libgpuarray
+	#git checkout tags/v0.6.2 -b v0.6.2
+	#mkdir Build
+	#cd Build
+	#cmake .. -DCMAKE_BUILD_TYPE=Release
+	#make
+	#make install
+
 
 	#Install Tensorflow
 	TF_PYTHON_URL="https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.3.0-cp35-cp35m-linux_x86_64.whl"
@@ -102,9 +110,8 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	pip install keras
 
 	#Install Pytorch
-	conda install -y pytorch torchvision cuda80 -c soumith
-
-
+	pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp35-cp35m-manylinux1_x86_64.whl
+	pip install torchvision
 
 %runscript
 	#Executes with the singularity run command
