@@ -10,27 +10,31 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 	#Add nvidia driver paths
 	PATH="/nvbin:$PATH"
-	LD_LIBRARY_PATH="/nvlib;$LD_LIBRARY_PATH"
+	LD_LIBRARY_PATH="/nvlib:$LD_LIBRARY_PATH"
 
 	#Add CUDA paths
 	CPATH="/usr/local/cuda/include:$CPATH"
 	PATH="/usr/local/cuda/bin:$PATH"
 	LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 	CUDA_HOME="/usr/local/cuda"
+		# CUDA root needed for Theano
+	CUDA_ROOT="/usr/local/cuda"
 
 	#Python 3.5 paths
 	CPATH="/usr/include/python3.5m:$CPATH"
 	PYTHONPATH="/usr/local/lib/python3.5/dist-packages:$PYTHONPATH"
 
-	export PATH LD_LIBRARY_PATH CPATH CUDA_HOME PYTHONPATH
+	export PATH LD_LIBRARY_PATH CPATH CUDA_HOME PYTHONPATH CUDA_ROOT
 
 
 %setup
 	#Runs on host
 	#The path to the image is $SINGULARITY_ROOTFS
 
+	mkdir -p ./build
+
 	mkdir $SINGULARITY_ROOTFS/build
-	mount --no-mtab --bind . "$SINGULARITY_ROOTFS/build"
+	mount --no-mtab --bind ./build "$SINGULARITY_ROOTFS/build"
 
 
 %post
@@ -50,7 +54,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	apt-get install -y wget git vim cmake cmake-curses-gui python3.5-dev
 
 
-	#Gets and builds opencv
+	#Gets and base packages (needed for opencv)
 	apt-get install -y build-essential cmake pkg-config libgtk-3-dev
 	apt-get install -y libjpeg8-dev libtiff5-dev libjasper-dev libpng12-dev ffmpeg
 	apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
@@ -68,11 +72,20 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	python get-pip.py
 
 	#Installed required global packages
-	pip install numpy
+	pip install numpy pandas scipy scikit-learn	matplotlib logging NLTK
 
-	#Builds in the build directory
+	#SMILE
 	cd /build
+	apt-get install -y python-pyo python-kivy
+	git clone https://github.com/compmem/smile.git
+	cd smile
+	pip install .
 
+	#Update libs links
+	ldconfig
+
+	#OpenCV
+	cd /build
 	wget https://github.com/opencv/opencv/archive/3.3.0.tar.gz
 	tar -xf 3.3.0.tar.gz
 	cd opencv-3.3.0
@@ -89,17 +102,20 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	ldconfig
 
 	#Install Theano
-	#pip install scipy nose pydot-ng pygpu pycuda Theano
+	pip install cython nose pydot-ng pycuda Theano
 	#Install libgpuarray needed by theano
-	#cd /build
-	#git clone https://github.com/Theano/libgpuarray.git
-	#cd libgpuarray
-	#git checkout tags/v0.6.2 -b v0.6.2
-	#mkdir Build
-	#cd Build
-	#cmake .. -DCMAKE_BUILD_TYPE=Release
-	#make
-	#make install
+	cd /build
+	git clone https://github.com/Theano/libgpuarray.git
+	cd libgpuarray
+	git checkout tags/v0.6.2 -b v0.6.2
+	mkdir Build
+	cd Build
+	cmake .. -DCMAKE_BUILD_TYPE=Release
+	make
+	make install
+	cd ..
+	python setup.py build
+	python setup.py install
 
 
 	#Install Tensorflow
@@ -112,6 +128,9 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	#Install Pytorch
 	pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp35-cp35m-manylinux1_x86_64.whl
 	pip install torchvision
+
+	#Clean build directory
+	rm -rf /build/*
 
 %runscript
 	#Executes with the singularity run command
