@@ -72,7 +72,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	python get-pip.py
 
 	#Installed required global packages
-	pip install numpy pandas scipy scikit-learn	matplotlib logging NLTK
+	pip install numpy pandas scipy sklearn	matplotlib logging NLTK
 
 	#SMILE
 	cd /build
