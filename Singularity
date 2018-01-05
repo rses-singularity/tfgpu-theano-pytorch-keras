@@ -119,7 +119,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 
 	#Install Tensorflow
-	TF_PYTHON_URL="https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.3.0-cp35-cp35m-linux_x86_64.whl"
+	TF_PYTHON_URL="https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.4.1-cp35-cp35m-linux_x86_64.whl"
 	pip install --ignore-installed --upgrade $TF_PYTHON_URL
 
 	#Install Keras

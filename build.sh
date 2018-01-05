@@ -1,8 +1,6 @@
 #!/bin/bash
 
-IMG_SIZE=8000
 IMG_NAME="dl-python-gpu"
 
-rm -f $IMG_NAME.img
-sudo singularity create --size $IMG_SIZE $IMG_NAME.img
-sudo singularity bootstrap $IMG_NAME.img Singularity
+rm -f $IMG_NAME.simg
+sudo singularity build $IMG_NAME.simg Singularity
