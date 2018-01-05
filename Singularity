@@ -46,13 +46,10 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	#Default mount paths
 	mkdir /scratch /data /shared /fastdata
 
-	#Nvidia Library mount paths
-	mkdir /nvlib /nvbin
 
 	#Updating and getting required packages
 	apt-get update
 	apt-get install -y wget git vim cmake cmake-curses-gui python3.5-dev
-
 
 	#Gets and base packages (needed for opencv)
 	apt-get install -y build-essential cmake pkg-config libgtk-3-dev
@@ -71,8 +68,9 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	wget https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py
 
+
 	#Installed required global packages
-	pip install numpy pandas scipy sklearn	matplotlib logging NLTK
+	pip install numpy pandas scipy sklearn	matplotlib NLTK
 
 	#SMILE
 	cd /build
