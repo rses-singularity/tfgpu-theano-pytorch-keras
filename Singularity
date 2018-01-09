@@ -8,16 +8,12 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	#Use bash as default shell
 	SHELL=/bin/bash
 
-	#Add nvidia driver paths
-	PATH="/nvbin:$PATH"
-	LD_LIBRARY_PATH="/nvlib:$LD_LIBRARY_PATH"
-
 	#Add CUDA paths
 	CPATH="/usr/local/cuda/include:$CPATH"
 	PATH="/usr/local/cuda/bin:$PATH"
 	LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 	CUDA_HOME="/usr/local/cuda"
-		# CUDA root needed for Theano
+	#CUDA root needed for Theano
 	CUDA_ROOT="/usr/local/cuda"
 
 	#Python 3.5 paths
@@ -31,14 +27,12 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	#Runs on host
 	#The path to the image is $SINGULARITY_ROOTFS
 
-	mkdir -p ./build
-
-	mkdir $SINGULARITY_ROOTFS/build
-	mount --no-mtab --bind ./build "$SINGULARITY_ROOTFS/build"
-
 
 %post
 	#Post setup script
+ 
+  #Makes a root build directory
+  mkdir /build
 
 	#Load environment variables
 	. /environment
@@ -46,66 +40,93 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	#Default mount paths
 	mkdir /scratch /data /shared /fastdata
 
+	echo "Updating ubuntu"
+	apt-get -y update
+	apt-get -y upgrade
+	apt-get -y dist-upgrade
+	apt-get -y autoremove
+	
+	echo "Installing essential packages"
+	apt-get install -y wget git vim cmake cmake-curses-gui build-essential
 
-	#Updating and getting required packages
-	apt-get update
-	apt-get install -y wget git vim cmake cmake-curses-gui python3.5-dev
+	echo "Installing OpenCV Dependencies"
 
-	#Gets and base packages (needed for opencv)
-	apt-get install -y build-essential cmake pkg-config libgtk-3-dev
-	apt-get install -y libjpeg8-dev libtiff5-dev libjasper-dev libpng12-dev ffmpeg
-	apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
-	apt-get install -y libxvidcore-dev libx264-dev
-	apt-get install -y libatlas-base-dev gfortran
+	## GUI (if you want to use GTK instead of Qt, replace 'qt5-default' with 'libgtkglext1-dev' and remove '-DWITH_QT=ON' option in CMake):
+	apt-get install -y qt5-default libvtk6-dev
 
-	#Make python 3.5m the default one
+	## Media I/O:
+	apt-get install -y zlib1g-dev libjpeg-dev libwebp-dev libpng-dev libtiff5-dev libjasper-dev libopenexr-dev libgdal-dev
+
+	## Video I/O:
+	apt-get install -y libdc1394-22-dev libavcodec-dev libavformat-dev libswscale-dev libtheora-dev libvorbis-dev libxvidcore-dev libx264-dev yasm libopencore-amrnb-dev libopencore-amrwb-dev libv4l-dev libxine2-dev
+
+	## Parallelism and linear algebra libraries:
+	apt-get install -y libtbb-dev libeigen3-dev
+
+	## Python:
+	apt-get install -y python3.5-dev python3.5-tk python3.5-numpy
+	
+	## Make python 3.5m the default
 	cd /usr/bin
-	rm /usr/bin/python
+	rm python
 	ln -s python3.5m python
-
-	#Install pip for python 3
+	
+	## Install pip for python 3
 	cd /build
 	wget https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py
 
+	## Installed required global python packages
+	pip install pandas scipy sklearn matplotlib NLTK
 
-	#Installed required global packages
-	pip install numpy pandas scipy sklearn	matplotlib NLTK
+	## Java:
+	apt-get install -y ant default-jdk
 
-	#SMILE
-	cd /build
-	apt-get install -y python-pyo python-kivy
-	git clone https://github.com/compmem/smile.git
-	cd smile
-	pip install .
+	## Documentation:
+	apt-get install -y doxygen
 
 	#Update libs links
 	ldconfig
 
-	#OpenCV
+	# OpenCV - INSTALL (YOU CAN CHANGE '3.3.0' FOR THE LAST STABLE VERSION)
+  echo "Installing OpenCV" 
 	cd /build
+	apt-get install -y unzip wget
 	wget https://github.com/opencv/opencv/archive/3.3.0.tar.gz
 	tar -xf 3.3.0.tar.gz
+	rm 3.3.0.tar.gz
 	cd opencv-3.3.0
 	mkdir build
 	cd build
-	cmake -D CMAKE_BUILD_TYPE=RELEASE \
+	cmake -DWITH_QT=ON -DWITH_OPENGL=ON -DFORCE_VTK=ON -DWITH_TBB=ON -DWITH_GDAL=ON -DWITH_XINE=ON -DBUILD_EXAMPLES=ON -DENABLE_PRECOMPILED_HEADERS=OFF -D CMAKE_BUILD_TYPE=RELEASE \
 	-D CMAKE_INSTALL_PREFIX=/usr/local \
 	-D BUILD_opencv_python3=yes \
 	-D PYTHON_DEFAULT_EXECUTABLE="/usr/bin/python3.5m" \
 	-D CUDA_ARCH_BIN="3.0 3.5 3.7 5.0 5.2 6.0 6.1" \
+	-D CUDA_CUDA_LIBRARY="/usr/local/cuda/lib64/stubs/libcuda.so" \
 	..
-	make -j8
+	make -j4
 	make install
 	ldconfig
 
-	#Install Theano
+
+  #echo "Installing SMILE" - Doesn't support python 3.5
+	#cd /build
+	#apt-get install -y python-pyo python-kivy
+	#git clone https://github.com/compmem/smile.git
+	cd smile
+	#pip install .
+
+	#Update libs links
+	ldconfig
+
+
+  echo "Installing Theano"
 	pip install cython nose pydot-ng pycuda Theano
 	#Install libgpuarray needed by theano
 	cd /build
 	git clone https://github.com/Theano/libgpuarray.git
 	cd libgpuarray
-	git checkout tags/v0.6.2 -b v0.6.2
 	mkdir Build
 	cd Build
 	cmake .. -DCMAKE_BUILD_TYPE=Release
@@ -116,19 +137,19 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	python setup.py install
 
 
-	#Install Tensorflow
+	echo "Installing Tensorflow"
 	TF_PYTHON_URL="https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.4.1-cp35-cp35m-linux_x86_64.whl"
 	pip install --ignore-installed --upgrade $TF_PYTHON_URL
 
-	#Install Keras
+	echo "Installing Keras"
 	pip install keras
 
-	#Install Pytorch
-	pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp35-cp35m-manylinux1_x86_64.whl
+  echo "Installing Pytorch"
+	pip install http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp35-cp35m-linux_x86_64.whl 
 	pip install torchvision
 
-	#Clean build directory
-	rm -rf /build/*
+	#Remove the build directory
+	rm -rf /build
 
 %runscript
 	#Executes with the singularity run command
