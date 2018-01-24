@@ -30,7 +30,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 %post
 	#Post setup script
- 
+
   #Makes a root build directory
   mkdir /build
 
@@ -45,7 +45,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	apt-get -y upgrade
 	apt-get -y dist-upgrade
 	apt-get -y autoremove
-	
+
 	echo "Installing essential packages"
 	apt-get install -y wget git vim cmake cmake-curses-gui build-essential
 
@@ -65,12 +65,12 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 
 	## Python:
 	apt-get install -y python3.5-dev python3.5-tk python3.5-numpy
-	
+
 	## Make python 3.5m the default
 	cd /usr/bin
 	rm python
 	ln -s python3.5m python
-	
+
 	## Install pip for python 3
 	cd /build
 	wget https://bootstrap.pypa.io/get-pip.py
@@ -89,7 +89,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	ldconfig
 
 	# OpenCV - INSTALL (YOU CAN CHANGE '3.3.0' FOR THE LAST STABLE VERSION)
-  echo "Installing OpenCV" 
+  echo "Installing OpenCV"
 	cd /build
 	apt-get install -y unzip wget
 	wget https://github.com/opencv/opencv/archive/3.3.0.tar.gz
@@ -125,8 +125,9 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	pip install cython nose pydot-ng pycuda Theano
 	#Install libgpuarray needed by theano
 	cd /build
-	git clone https://github.com/Theano/libgpuarray.git
-	cd libgpuarray
+	wget https://github.com/Theano/libgpuarray/releases/download/v0.7.5/libgpuarray-0.7.5.tar.gz
+	tar -xf libgpuarray-0.7.5.tar.gz
+	cd libgpuarray-0.7.5
 	mkdir Build
 	cd Build
 	cmake .. -DCMAKE_BUILD_TYPE=Release
@@ -145,7 +146,7 @@ From: nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
 	pip install keras
 
   echo "Installing Pytorch"
-	pip install http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp35-cp35m-linux_x86_64.whl 
+	pip install http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp35-cp35m-linux_x86_64.whl
 	pip install torchvision
 
 	#Remove the build directory
